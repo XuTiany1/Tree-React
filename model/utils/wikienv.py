@@ -36,14 +36,21 @@ class WikiEnv(gym.Env):
     self.num_searches = 0
     
   def _get_obs(self):
+    """
+      Return current observation
+    """
     return self.obs
 
   def _get_info(self):
+    """
+      Return the current step as well as the current answer
+    """
     return {"steps": self.steps, "answer": self.answer}
 
   def reset(self, seed=None, return_info=False, options=None):
-    # We need the following line to seed self.np_random
-    # super().reset(seed=seed)
+    """
+      Resets the environment to its initial state for a new start
+    """
     self.obs = ("Interact with Wikipedia using search[], lookup[], and "
                 "finish[].\n")
     self.page = None
@@ -57,6 +64,9 @@ class WikiEnv(gym.Env):
     return (observation, info) if return_info else observation
 
   def construct_lookup_list(self, keyword):
+    """
+      Builds a list of sentences containing a specific keyword from the current Wikipedia page.
+    """
     # find all paragraphs
     if self.page is None:
       return []
@@ -75,6 +85,9 @@ class WikiEnv(gym.Env):
 
   @staticmethod
   def get_page_obs(page):
+    """
+      Converts a Wiki page into a short observation -> I only get the first 5 sentences
+    """
     # find all paragraphs
     paragraphs = page.split("\n")
     paragraphs = [p.strip() for p in paragraphs if p.strip()]
@@ -85,17 +98,14 @@ class WikiEnv(gym.Env):
       sentences += p.split('. ')
     sentences = [s.strip() + '.' for s in sentences if s.strip()]
     return ' '.join(sentences[:5])
-
-    # ps = page.split("\n")
-    # ret = ps[0]
-    # for i in range(1, len(ps)):
-    #   if len((ret + ps[i]).split(" ")) <= 50:
-    #     ret += ps[i]
-    #   else:
-    #     break
-    # return ret
+  
 
   def search_step(self, entity):
+    """
+      Searches Wiki for a term, 
+      Retrieve the page,
+      Format the page for the agent
+    """
     entity_ = entity.replace(" ", "+")
     search_url = f"https://en.wikipedia.org/w/index.php?search={entity_}"
     old_time = time.time()
@@ -122,6 +132,9 @@ class WikiEnv(gym.Env):
         self.lookup_keyword = self.lookup_list = self.lookup_cnt = None
   
   def step(self, action):
+    """
+    Process a single action (Search, Lookup, Finish) and updates environment accordingly
+    """
     reward = 0
     done = False
     action = action.strip()
@@ -131,8 +144,6 @@ class WikiEnv(gym.Env):
     
     if action.startswith("search[") and action.endswith("]"):
       entity = action[len("search["):-1]
-      # entity_ = entity.replace(" ", "_")
-      # search_url = f"https://en.wikipedia.org/wiki/{entity_}"
       self.search_step(entity)
     elif action.startswith("lookup[") and action.endswith("]"):
       keyword = action[len("lookup["):-1]
